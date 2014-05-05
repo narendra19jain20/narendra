@@ -47,42 +47,81 @@ public class TestGoogleSea {
 			subs.Fetch(query);
 	}
 	
+	private static void Delet(){
+		try{
+			 
+    		File file = new File("test.html");
+ 
+    		if(file.delete()){
+    			System.out.println(file.getName() + " is deleted!");
+    		}else{
+    			System.out.println("Delete operation is failed.");
+    		}
+    		
+    		 file = new File("try.zip");
+   		 
+    		if(file.delete()){
+    			System.out.println(file.getName() + " is deleted!");
+    		}else{
+    			System.out.println("for try.zip, Delete operation is failed or file does not exits.");
+    		}
+    		 file = new File("try.html");
+	   		 
+	    		if(file.delete()){
+	    			System.out.println(file.getName() + " is deleted!");
+	    		}else{
+	    			System.out.println("for try.zip, Delete operation is failed or file does not exits.");
+	    		}
+ 
+    	}catch(Exception e){
+ 
+    		e.printStackTrace();
+ 
+    	}
+	}
+	
+	
+	private static String tvsubtitles_handle(URL url2) throws IOException{
+		String subURL = null;
+		HttpURLConnection con;
+		HttpURLConnection.setFollowRedirects(false);
+		con =  (HttpURLConnection) url2.openConnection();
+		while(con.getResponseCode()==301){
+			String loc1 = "http://www.tvsubtitles.net/";
+			con.disconnect();
+			String temp = url2.toString();
+			temp = temp.substring(23, temp.length());		
+		//	System.out.println("we have this:" + temp);
+			url2 = new URL(loc1  + temp);
+			con =  (HttpURLConnection) url2.openConnection();
+			//con.addRequestProperty("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0)");
+			con.addRequestProperty("Host", loc1);
+			con.addRequestProperty("Cookie", "visited=1; visited1=1");
+			} 
+			/// while for 301 ends here......
+			
+		Map<String, List<String>> lo = con.getHeaderFields();
+		String loc = null;
+		String host = null;
+		//	System.out.println(lo.keySet().toString());
+		for (Map.Entry<String, List<String>> entry : lo.entrySet()) {
+			System.out.println("Key : " + entry.getKey() + " ,Value : " + entry.getValue());
+		}
+		if(lo.containsKey("Location")){
+			loc = lo.get("Location").toString();
+			//if(lo.containsKey("Host"))
+			//	host = lo.get("Host").toString();
+			loc = loc.replaceAll("[ ]+", "%20");
+			host = "www.tvsubtitles.net/";
+			subURL = "http://" + host + loc.substring(1, loc.length()-1);
+		}
+	return subURL;
+	}
 	public void Fetch(String query) throws IOException, Throwable {
 		
 		// deleting a existing file
-				try{
-					 
-		    		File file = new File("test.html");
-		 
-		    		if(file.delete()){
-		    			System.out.println(file.getName() + " is deleted!");
-		    		}else{
-		    			System.out.println("Delete operation is failed.");
-		    		}
-		    		
-		    		 file = new File("try.zip");
-		   		 
-		    		if(file.delete()){
-		    			System.out.println(file.getName() + " is deleted!");
-		    		}else{
-		    			System.out.println("for try.zip, Delete operation is failed or file does not exits.");
-		    		}
-		    		 file = new File("try.html");
-			   		 
-			    		if(file.delete()){
-			    			System.out.println(file.getName() + " is deleted!");
-			    		}else{
-			    			System.out.println("for try.zip, Delete operation is failed or file does not exits.");
-			    		}
-		 
-		    	}catch(Exception e){
-		 
-		    		e.printStackTrace();
-		 
-		    	}
-				///////////////// done deleting
-				
-
+		Delet();
+		///////////////// done deleting
 		String address = "http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q=";
 		//String query = "How I met your Mother season 8 English subtitles";
 		String charset = "UTF-8";
@@ -110,22 +149,20 @@ public class TestGoogleSea {
 		// URL find
 		String subURL = null;
 		pattern_matching p = new pattern_matching();
-		String[] sub = {"subscene.com/", "tvsubtitles.net/"};// tvsubtitles.net is the one causing issue, 
-										//it replied HTTP 302 with relative link (with spaces)in the Location tag
+		String[] sub = {"subscene.com/", "tvsubtitles.net/"};// just a temporary list for now,,,, will expend this to other sites too 
+										//for sites with HTTP 302 reply, tvsubtitles.net way to use...
 		for(int i=0; i<=total-1; i++){
 			String Y = results.getResponseData().getResults().get(i).getUrl().toString();
 		//	System.out.println(Y);
 			int found =0;
-			
-			for(int k = 0; k<sub.length; k++){
-			if (p.SubString(Y, sub[k])){
-				System.out.println("Link seems maching is: " + Y);
-				subURL = Parse(Y, sub[k]);
-				//temp = subURL;
-				subURL = "http://" + sub[k] + subURL;   // making the full URL here
-				found =1;
-				break;
-			}
+			for(int k = 0; k<sub.length; k++){     // check if any fetched URL matches any of the expected URLs for subtitles.
+				if (p.SubString(Y, sub[k])){
+					System.out.println("Link seems maching is: " + Y);
+					subURL = Parse(Y, sub[k]);
+					subURL = "http://" + sub[k] + subURL;   // making the full URL here
+					found =1;
+					break;
+				}
 			}
 			if(found ==1)
 				break;
@@ -134,125 +171,49 @@ public class TestGoogleSea {
 				System.exit(0);
 			}
 		
-		}
+		} ///  the checking for loop ends here...
+		
 		System.out.println("link is found");
 		System.out.println("modified complete link is: "+ subURL); // current link to pursue 
 		//--------------------------------------------
 		// Check for error, if link has spaces or not,,,, etc.... remove them,,,
 		subURL = subURL.trim();
-		//subURL = subURL.replaceAll("\\s+", "%20");
 		subURL = subURL.replaceAll("[ ]+ ", "%20");
 		subURL = new URI(null, subURL, null).toASCIIString();
 		URL url2 = new URL(subURL);
 		HttpURLConnection con;
 		
 		// HttpURLConnection con = (HttpURLConnection) url2.openConnection();
-		// some how sanitize the link, here,,,,
-		// the issue is that, if the connection is back to back how to tell java to sanitize it automatically.
 		//InputStream streamx = (con = (HttpURLConnection) url2.openConnection()).getInputStream(); 
-		HttpURLConnection.setFollowRedirects(false);
-		if(p.SubString(subURL, "tvsubtitles")){
-		con =  (HttpURLConnection) url2.openConnection();
-		while(con.getResponseCode()==301){
-			System.out.println("Key" );
-			con.disconnect();
-		//	con.set
-			String temp = url2.toString();
-			temp = temp.substring(23, temp.length());
-			System.out.println("we have this:" + temp);
-			url2 = new URL("http://www.tvsubtitles.net/" + temp);
-			con =  (HttpURLConnection) url2.openConnection();
-			//con.addRequestProperty("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0)");
-			con.addRequestProperty("Host", "www.tvsubtitles.net");
-			con.addRequestProperty("Cookie", "visited=1; visited1=1");
-			}
+		
+	if(p.SubString(subURL, sub[1])){             /// if the selected URL is for tvsubtitles....
 			
+		subURL = tvsubtitles_handle(url2);
+	}  // the if loop ends here, for if the subURL is for tvsubtitles......
 		
-	//	con.setInstanceFollowRedirects(false);
-		Map<String, List<String>> lo = con.getHeaderFields();
-		String loc = null;
-		//	System.out.println(lo.keySet().toString());
-		for (Map.Entry<String, List<String>> entry : lo.entrySet()) {
-			System.out.println("Key : " + entry.getKey() + 
-	                 " ,Value : " + entry.getValue());
-		}
-		if(lo.containsKey("Location")){
-			loc = lo.get("Location").toString();
-			System.out.println("here it is,,,ohohokhohkhohko" + loc);
-			loc = loc.substring(0, loc.length());
-			loc = loc.replaceAll("[ ]+", "%20");
-			subURL = "http://www.tvsubtitles.net/" + loc.substring(1, loc.length()-1);
-			System.out.println("here it is,,,ohohokhohkhohko" + subURL);
-		}
-		
-		//System.out.println("here it is,,,ohohokhohkhohko" + loc);
-		}
 		url2 = new URL(subURL);
-		//System.out.println("here it is,,,ohohokhohkhohko");
 		con = (HttpURLConnection) url2.openConnection();
-		//con.addRequestProperty("Host", "www.tvsubtitles.net");
 		con.addRequestProperty("Cookie", "visited=1; visited1=1");
+		
 		InputStream streamx = con.getInputStream(); 
 		int responseCode = con.getResponseCode();		
 		
-		System.out.println("here it is,,," + responseCode);
-		//File Files = new File();
+		System.out.println("here it is,,, the final response code we see is... " + responseCode);
 		String FileName = query + ".zip";// what file to read if we get it,,,,,,
 		
 	if (responseCode == HttpURLConnection.HTTP_OK) {   // response is HTTP 200,,,, 
 			System.out.println("Getting the file......");
-			try  { //try (InputStream stream = con.getInputStream()) {
-			    Files.copy(streamx, Paths.get("try.zip"));    // since all the subtitles files are zip files, just a name to save it.
+			try  { 											  //try (InputStream stream = con.getInputStream()) {
+			    Files.copy(streamx, Paths.get("try.zip"));   // since all the subtitles files are zip files, just a name to save it.
 			}catch(IOException e){
 				e.printStackTrace();
 			} 
 		System.out.println("File download is done");
+		// may be add some delete temporary generate file code,,,,
 		}
-/*	else if (responseCode == 302) {                // I tried this loop for tvsubtitles, but it never comes here,
-														// due to concurrent request in previous loop
-			try (InputStream stream = ((HttpURLConnection) con).getErrorStream()) {
-			    Files.copy(stream, Paths.get("test2.html"));
-			
-			BufferedReader br = new BufferedReader(new FileReader("test2.html")); // agar HTTP 302 detect hota hai to nai file ko save karo
-																				// and parse it again to get the location tag wala part
-			String sCurrentLine;
-			 String Location = null;
-			while ((sCurrentLine = br.readLine()) != null) {
-				System.out.println(" line is: " + sCurrentLine);
-				if(p.SubString(sCurrentLine, "Location")){
-					Location = sCurrentLine.substring(11);
-					break;
-				}
-			}
-			
-			Location = Location.trim();
-			Location = Location.replaceAll("[ ]+", "%20");
-			for(int i = 0; i<sub.length;i++){
-				if(p.SubString(sub[i], "tvsubtitles.net/"))                 // hard coded for tvsutitltes and sbscene for now//////
-						Location = "http://tvsubtitles.net/"+Location;
-				if(p.SubString(sub[i], "subscene.com/"))					// hard coded for tvsutitltes and sbscene for now//////
-					Location = "http://subscene.com/"+Location;
-			}
-			URL url3 = new URL(Location);
-			System.out.println(" the final link is: " + Location);
-			HttpURLConnection con3 = (HttpURLConnection) url3.openConnection();
-			int responseCode3 = con3.getResponseCode();
-			if (responseCode3 == HttpURLConnection.HTTP_OK) {
-				System.out.println("Getting the file......");
-				try (InputStream stream3 = con3.getInputStream()) {  //again, .zip file for subtitles, save it..address..
-				    Files.copy(stream3, Paths.get("try.zip"));          // 
-					}
-				System.out.println("File download is done");
-			}else {
-				System.out.println("bad response code:" +  responseCode3);
-				System.exit(0);
-			}
-		}
-		//inputStream.close();
-		}    */
 		else {
-			System.out.println("bad response code:" +  responseCode);
-			System.exit(0);
+				System.out.println("bad response code:" +  responseCode);
+				System.exit(0);
 		}
 	}
 	
@@ -281,7 +242,6 @@ public class TestGoogleSea {
 				    Files.copy(stream, Paths.get(FileName));
 				    System.out.println(e.getMessage());
 				}
-				 //String html = "<html><head><title>First parse</title></head>"+ "<body><a href="+ "/subtitle/download?mac=z4XGKzZi5ZtjWR6jfdeI97XDYN2b4yBreI8TJIBfpdwvw8NHDaWCFJClB5c0ve8U0></a><p>Parsed HTML into a doc.</p></body></html>";
 				//reading the file to parse
 				File input = new File(FileName);
 				System.out.println(X);
@@ -303,23 +263,8 @@ public class TestGoogleSea {
 				}
 				else{
 					// deleting a existing file
-					try{
-						 
-			    		File file = new File("test.html");
-			 
-			    		if(file.delete()){
-			    			System.out.println(file.getName() + " is deleted!");
-			    		}else{
-			    			System.out.println("Delete operation is failed.");
-			    		}
-			 
-			    	}catch(Exception e){
-			 
-			    		e.printStackTrace();
-			 
-			    	}
+					Delet();
 					///////////////// done deleting
-					
 					linkHref= "http://" + sub + linkHref;
 					System.out.println(" the new link to look for is: " + linkHref);
 					linkHref= Parse(linkHref, sub);
@@ -328,14 +273,10 @@ public class TestGoogleSea {
 			//inputStream.close();
 			} else {
 					System.out.println(" HTTP 404 (URL Not Found), please check the query and see if a real website is getting fatched, not a dummy one");
-					flag=0;
-			}
+					flag=0;  
+					}
 		}while(flag==1);
-			
-		//String A = "/subtitle/download?mac=z4XGKzZi5ZtjWR6jfdeI97XDYN2b4yBreI8TJIBfpdwvw8NHDaWCFJClB5c0ve8U0";
-		
-		return linkHref;
-		//return A;
+	return linkHref;
 	}
 }
  

@@ -1,0 +1,42 @@
+/*	else if (responseCode == 302) {                // I tried this loop for tvsubtitles, but it never comes here,
+														// due to concurrent request in previous loop
+			try (InputStream stream = ((HttpURLConnection) con).getErrorStream()) {
+			    Files.copy(stream, Paths.get("test2.html"));
+			
+			BufferedReader br = new BufferedReader(new FileReader("test2.html")); // agar HTTP 302 detect hota hai to nai file ko save karo
+																				// and parse it again to get the location tag wala part
+			String sCurrentLine;
+			 String Location = null;
+			while ((sCurrentLine = br.readLine()) != null) {
+				System.out.println(" line is: " + sCurrentLine);
+				if(p.SubString(sCurrentLine, "Location")){
+					Location = sCurrentLine.substring(11);
+					break;
+				}
+			}
+			
+			Location = Location.trim();
+			Location = Location.replaceAll("[ ]+", "%20");
+			for(int i = 0; i<sub.length;i++){
+				if(p.SubString(sub[i], "tvsubtitles.net/"))                 // hard coded for tvsutitltes and sbscene for now//////
+						Location = "http://tvsubtitles.net/"+Location;
+				if(p.SubString(sub[i], "subscene.com/"))					// hard coded for tvsutitltes and sbscene for now//////
+					Location = "http://subscene.com/"+Location;
+			}
+			URL url3 = new URL(Location);
+			System.out.println(" the final link is: " + Location);
+			HttpURLConnection con3 = (HttpURLConnection) url3.openConnection();
+			int responseCode3 = con3.getResponseCode();
+			if (responseCode3 == HttpURLConnection.HTTP_OK) {
+				System.out.println("Getting the file......");
+				try (InputStream stream3 = con3.getInputStream()) {  //again, .zip file for subtitles, save it..address..
+				    Files.copy(stream3, Paths.get("try.zip"));          // 
+					}
+				System.out.println("File download is done");
+			}else {
+				System.out.println("bad response code:" +  responseCode3);
+				System.exit(0);
+			}
+		}
+		//inputStream.close();
+		}    */
